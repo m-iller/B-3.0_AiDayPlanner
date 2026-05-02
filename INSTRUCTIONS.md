@@ -54,6 +54,35 @@ To use a custom config file, pass its path when starting the server (see below).
 
 ---
 
+## Frontend
+
+Vue 3 + TypeScript + Tailwind CSS. Lives in `/frontend`.
+
+### Install
+
+```bash
+cd frontend
+npm install
+```
+
+### Dev server (requires backend running on port 8000)
+
+```bash
+npm run dev
+```
+
+Opens at `http://localhost:5173`. API calls are proxied to `http://localhost:8000`.
+
+### Build for production
+
+```bash
+npm run build
+```
+
+Output in `frontend/dist/`.
+
+---
+
 ## Starting the Server
 
 ### Default (uses `config/default.toml`, persistent SQLite)
@@ -149,6 +178,14 @@ ai_day_planner/        # Application source
 
 config/
   default.toml         # All configurable values
+
+frontend/              # Vue 3 + TypeScript + Tailwind
+  src/
+    api/               # Typed API clients (one per module)
+    components/        # Shared UI components
+    views/             # One view per module
+    router/            # Vue Router config
+  vite.config.ts       # Vite + Tailwind + API proxy
 
 tests/
   unit/                # Pure function tests
