@@ -58,6 +58,8 @@ VALID_TOML = """
     weight_fatigue = 0.8
     min_completion_probability = 0.4
     daily_overload_threshold = 0.5
+    major_task_difficulty_threshold = 7
+    max_major_tasks_per_day = 1
 
     [learning]
     ema_smoothing_factor = 0.3

@@ -71,8 +71,9 @@ class SchedulerConfig:
     daily_overload_threshold: float
     # Flow-state protection: cap how many "major" tasks are scheduled per day.
     # A task is "major" when difficulty >= major_task_difficulty_threshold.
-    major_task_difficulty_threshold: int  # e.g. 7 out of 10
-    max_major_tasks_per_day: int          # e.g. 1
+    # Defaults allow existing code/tests that don't set these to keep working.
+    major_task_difficulty_threshold: int = 7
+    max_major_tasks_per_day: int = 1
 
 
 @dataclass(frozen=True)
