@@ -67,7 +67,7 @@ def _make_task_tracked_handler(app: FastAPI):
     """
     def handler(payload: dict) -> None:
         config: AppConfig = app.state.config
-        conn = app.state.db_conn
+        conn = get_connection(app.state.db_path)
         bus: EventBus = app.state.event_bus
         logger: logging.Logger = app.state.logger
 
@@ -212,9 +212,11 @@ def create_app(config_path: Path | str = "config/default.toml") -> FastAPI:
 
     # DB_PATH env var overrides config file value — useful for containers/CI
     db_path = os.environ.get("DB_PATH", config.database.path)
-    db_conn = get_connection(db_path)
-    run_migrations(db_conn)
-    logger.info("Database connected", extra={"db_path": db_path})
+    # Run migrations on a dedicated connection; per-request connections are opened fresh.
+    migration_conn = get_connection(db_path)
+    run_migrations(migration_conn)
+    migration_conn.close()
+    logger.info("Database migrations applied", extra={"db_path": db_path})
 
     bus = EventBus(logger=get_logger("ai_day_planner.event_bus", level=config.logging.level))
 
@@ -226,7 +228,7 @@ def create_app(config_path: Path | str = "config/default.toml") -> FastAPI:
 
     # Store shared state
     app.state.config = config
-    app.state.db_conn = db_conn
+    app.state.db_path = db_path   # routers open per-request connections from this
     app.state.event_bus = bus
     app.state.logger = logger
 

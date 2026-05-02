@@ -23,7 +23,8 @@ class FatigueOverrideRequest(BaseModel):
 
 
 def _get_repo(request: Request) -> FatigueRepository:
-    return FatigueRepository(request.app.state.db_conn)
+    from ai_day_planner.database import get_connection
+    return FatigueRepository(get_connection(request.app.state.db_path))
 
 
 @router.get("/{record_date}", response_model=ApiResponse[FatigueRecord])

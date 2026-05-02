@@ -30,7 +30,8 @@ router = APIRouter(prefix="/calendar", tags=["calendar"])
 
 
 def _get_repos(request: Request):
-    conn = request.app.state.db_conn
+    from ai_day_planner.database import get_connection
+    conn = get_connection(request.app.state.db_path)
     return TimeBlockRepository(conn), ScheduleEntryRepository(conn)
 
 

@@ -32,7 +32,8 @@ router = APIRouter(prefix="/tasks", tags=["tasks"])
 
 
 def _get_repo(request: Request) -> TaskRepository:
-    return TaskRepository(request.app.state.db_conn)
+    from ai_day_planner.database import get_connection
+    return TaskRepository(get_connection(request.app.state.db_path))
 
 
 @router.post("", response_model=ApiResponse[Task])

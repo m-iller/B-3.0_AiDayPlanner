@@ -205,3 +205,4 @@ tests/
 | Tests fail with import errors | Dev deps missing | Run `uv sync --extra dev` |
 | Frontend shows API errors | Backend not running | Start backend first on port 8000 |
 | `npm run dev` fails | Node deps missing | Run `npm install` inside `frontend/` |
+| API calls fail with VPN/proxy on | `localhost` DNS intercepted | Copy `frontend/.env.example` to `frontend/.env.local`, set `VITE_API_URL=http://127.0.0.1:8000` |

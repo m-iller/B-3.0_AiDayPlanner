@@ -10,17 +10,19 @@ from __future__ import annotations
 import sqlite3
 
 
-def get_connection(db_path: str) -> sqlite3.Connection:
+def get_connection(db_path: str, check_same_thread: bool = True) -> sqlite3.Connection:
     """
     Open a SQLite connection with WAL journal mode and foreign key enforcement.
 
     Args:
         db_path: File path for the SQLite database, or ":memory:" for in-memory.
+        check_same_thread: Set False to allow use across threads (safe for read-heavy
+            workloads with WAL mode; each request should still use its own connection).
 
     Returns:
         A configured sqlite3.Connection.
     """
-    conn = sqlite3.connect(db_path)
+    conn = sqlite3.connect(db_path, check_same_thread=check_same_thread)
     conn.execute("PRAGMA journal_mode = WAL;")
     conn.execute("PRAGMA foreign_keys = ON;")
     conn.row_factory = sqlite3.Row

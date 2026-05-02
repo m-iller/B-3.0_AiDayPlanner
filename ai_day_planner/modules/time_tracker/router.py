@@ -28,7 +28,8 @@ router = APIRouter(prefix="/tracking", tags=["tracking"])
 
 
 def _get_repos(request: Request):
-    conn = request.app.state.db_conn
+    from ai_day_planner.database import get_connection
+    conn = get_connection(request.app.state.db_path)
     return TrackingSessionRepository(conn), InterruptionRepository(conn), TaskRepository(conn)
 
 

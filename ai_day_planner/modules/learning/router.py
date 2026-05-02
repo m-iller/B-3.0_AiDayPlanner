@@ -21,8 +21,9 @@ class ResetRequest(BaseModel):
 
 def _get_repo(request: Request) -> CoefficientRepository:
     config = request.app.state.config
+    from ai_day_planner.database import get_connection
     return CoefficientRepository(
-        request.app.state.db_conn,
+        get_connection(request.app.state.db_path),
         default_coefficient=config.learning.default_correction_coefficient,
     )
 

@@ -41,7 +41,8 @@ def run_schedule(
     schedule_date: Optional[str] = Query(default=None, description="ISO date to schedule for (defaults to today)"),
 ):
     config = request.app.state.config
-    conn = request.app.state.db_conn
+    from ai_day_planner.database import get_connection
+    conn = get_connection(request.app.state.db_path)
     bus = request.app.state.event_bus
     logger = request.app.state.logger
 
@@ -143,7 +144,8 @@ def run_schedule(
 
 @router.post("/confirm/{entry_id}", response_model=ApiResponse[dict])
 def confirm_schedule_entry(entry_id: str, request: Request):
-    conn = request.app.state.db_conn
+    from ai_day_planner.database import get_connection
+    conn = get_connection(request.app.state.db_path)
     logger = request.app.state.logger
 
     se_repo = ScheduleEntryRepository(conn)

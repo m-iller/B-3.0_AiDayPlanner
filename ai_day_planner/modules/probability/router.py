@@ -30,7 +30,8 @@ def get_task_probability(
     slot_start: str = Query(..., description="HH:MM"),
 ):
     config = request.app.state.config
-    conn = request.app.state.db_conn
+    from ai_day_planner.database import get_connection
+    conn = get_connection(request.app.state.db_path)
 
     task_repo = TaskRepository(conn)
     fatigue_repo = FatigueRepository(conn)
@@ -69,7 +70,8 @@ def get_task_probability(
 @router.get("/day/{record_date}", response_model=ApiResponse[DayAggregate])
 def get_day_aggregate(record_date: str, request: Request):
     config = request.app.state.config
-    conn = request.app.state.db_conn
+    from ai_day_planner.database import get_connection
+    conn = get_connection(request.app.state.db_path)
 
     from datetime import date as date_type
     day = date_type.fromisoformat(record_date)
