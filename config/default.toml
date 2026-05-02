@@ -1,0 +1,46 @@
+# AI Day Planner — default configuration
+# All values sourced here; no hardcoded values in production code.
+
+[task]
+difficulty_min = 1
+difficulty_max = 10
+urgency_min = 1
+urgency_max = 10
+importance_min = 1
+importance_max = 10
+
+[calendar]
+active_hours_start = "08:00"
+active_hours_end = "22:00"
+
+[fatigue]
+min_score = 1
+max_score = 100
+high_threshold = 75
+increase_difficulty_weight = 0.5
+increase_duration_weight = 0.05
+recovery_rate_per_minute = 0.1
+high_fatigue_penalty = 0.2
+
+[scheduler]
+weight_difficulty = 1.0
+weight_urgency = 1.5
+weight_importance = 1.2
+weight_fatigue = 0.8
+min_completion_probability = 0.4
+daily_overload_threshold = 0.5
+
+[learning]
+ema_smoothing_factor = 0.3
+default_correction_coefficient = 1.0
+
+[probability]
+prior_probability = 0.7
+weight_fatigue = 0.25
+weight_difficulty = 0.25
+weight_time_of_day = 0.2
+weight_correction = 0.15
+weight_historical_rate = 0.15
+
+[logging]
+level = "INFO"
