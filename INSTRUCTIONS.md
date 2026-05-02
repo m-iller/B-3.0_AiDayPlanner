@@ -3,7 +3,7 @@
 ## Requirements
 
 - Python 3.11+
-- pip
+- [uv](https://docs.astral.sh/uv/getting-started/installation/)
 
 ---
 
@@ -16,37 +16,18 @@ git clone <repo-url>
 cd ai-day-planner
 ```
 
-### 2. Create a virtual environment
+### 2. Install dependencies
+
+uv manages the virtual environment automatically:
 
 ```bash
-python -m venv .venv
-```
-
-Activate it:
-
-- **Linux / macOS:**
-  ```bash
-  source .venv/bin/activate
-  ```
-- **Windows (CMD):**
-  ```cmd
-  .venv\Scripts\activate.bat
-  ```
-- **Windows (PowerShell):**
-  ```powershell
-  .venv\Scripts\Activate.ps1
-  ```
-
-### 3. Install dependencies
-
-```bash
-pip install -e .
+uv sync
 ```
 
 To also install dev/test dependencies:
 
 ```bash
-pip install -e ".[dev]"
+uv sync --extra dev
 ```
 
 ---
@@ -76,23 +57,19 @@ To use a custom config file, pass its path when starting the server (see below).
 ### Default (uses `config/default.toml`, in-memory SQLite)
 
 ```bash
-uvicorn ai_day_planner.main:create_app --factory --reload
+uv run uvicorn ai_day_planner.main:create_app --factory --reload
 ```
 
 ### Custom config path
 
-Set the `CONFIG_PATH` environment variable before starting:
-
 ```bash
-CONFIG_PATH=config/default.toml uvicorn ai_day_planner.main:create_app --factory --reload
+CONFIG_PATH=config/default.toml uv run uvicorn ai_day_planner.main:create_app --factory --reload
 ```
-
-> **Note:** The app currently uses an in-memory SQLite database by default. Data does not persist across restarts. To wire a file-based DB, modify the `get_connection` call in `main.py` to point to a file path (e.g. `planner.db`).
 
 ### Production (no reload)
 
 ```bash
-uvicorn ai_day_planner.main:create_app --factory --host 0.0.0.0 --port 8000
+uv run uvicorn ai_day_planner.main:create_app --factory --host 0.0.0.0 --port 8000
 ```
 
 ---
@@ -117,30 +94,30 @@ All responses follow the envelope schema:
 
 ## Running Tests
 
-Requires dev dependencies installed (`pip install -e ".[dev]"`).
+Requires dev dependencies installed (`uv sync --extra dev`).
 
 ### All tests
 
 ```bash
-pytest
+uv run pytest
 ```
 
 ### With coverage report
 
 ```bash
-pytest --cov=ai_day_planner --cov-report=term-missing
+uv run pytest --cov=ai_day_planner --cov-report=term-missing
 ```
 
 ### Property-based tests only
 
 ```bash
-pytest tests/property/
+uv run pytest tests/property/
 ```
 
 ### Unit tests only
 
 ```bash
-pytest tests/unit/
+uv run pytest tests/unit/
 ```
 
 ---
@@ -180,6 +157,6 @@ tests/
 | Symptom | Cause | Fix |
 |---|---|---|
 | `ConfigurationError` on startup | Missing or invalid field in TOML | Check `config/default.toml` against the schema in `config.py` |
-| `ModuleNotFoundError` | Package not installed | Run `pip install -e .` |
+| `ModuleNotFoundError` | Package not installed | Run `uv sync` |
 | Port already in use | Another process on 8000 | Use `--port <other>` flag |
-| Tests fail with import errors | Dev deps missing | Run `pip install -e ".[dev]"` |
+| Tests fail with import errors | Dev deps missing | Run `uv sync --extra dev` |

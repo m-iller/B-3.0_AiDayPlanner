@@ -27,6 +27,10 @@ ENV/
 pip-log.txt
 pip-delete-this-directory.txt
 
+# uv
+.uv/
+uv.lock
+
 # pytest / coverage
 .pytest_cache/
 .coverage
