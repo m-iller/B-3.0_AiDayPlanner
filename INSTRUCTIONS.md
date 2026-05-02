@@ -56,6 +56,8 @@ To use a custom config file, pass its path when starting the server (see below).
 
 ### Default (uses `config/default.toml`, in-memory SQLite)
 
+> **All commands must be run from the project root** (the directory containing `pyproject.toml`), not from inside `ai_day_planner/`.
+
 ```bash
 uv run uvicorn ai_day_planner.main:create_app --factory --reload
 ```
