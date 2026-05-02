@@ -203,3 +203,5 @@ tests/
 | `ModuleNotFoundError` | Package not installed | Run `uv sync` |
 | Port already in use | Another process on 8000 | Use `--port <other>` flag |
 | Tests fail with import errors | Dev deps missing | Run `uv sync --extra dev` |
+| Frontend shows API errors | Backend not running | Start backend first on port 8000 |
+| `npm run dev` fails | Node deps missing | Run `npm install` inside `frontend/` |
