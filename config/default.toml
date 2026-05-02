@@ -29,6 +29,10 @@ weight_importance = 1.2
 weight_fatigue = 0.8
 min_completion_probability = 0.4
 daily_overload_threshold = 0.5
+# Flow-state protection: tasks with difficulty >= threshold count as "major".
+# At most max_major_tasks_per_day major tasks will be scheduled on any single day.
+major_task_difficulty_threshold = 7
+max_major_tasks_per_day = 1
 
 [learning]
 ema_smoothing_factor = 0.3
@@ -44,3 +48,30 @@ weight_historical_rate = 0.15
 
 [logging]
 level = "INFO"
+
+[database]
+# SQLite file path. Use ":memory:" for ephemeral in-memory DB (data lost on restart).
+# Override at runtime with the DB_PATH environment variable.
+path = "planner.db"
+
+# ---------------------------------------------------------------------------
+# Weekly time budget — splits available hours into 4 named buckets.
+# All fractions must sum to 1.0.
+# is_immutable = true means the scheduler will not reassign slots from that bucket.
+# ---------------------------------------------------------------------------
+
+[week.must_do]
+fraction = 0.25
+is_immutable = false
+
+[week.projects]
+fraction = 0.25
+is_immutable = false
+
+[week.learning]
+fraction = 0.25
+is_immutable = false
+
+[week.rest]
+fraction = 0.25
+is_immutable = true

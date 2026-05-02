@@ -141,6 +141,9 @@ def assign_tasks_to_slots(
     # Maps task_id -> assigned slot datetime (for ordering check)
     assigned_slot_times: dict[str, datetime] = {}
 
+    # Track major tasks assigned per day (date ISO string -> count)
+    major_tasks_per_day: dict[str, int] = {}
+
     assigned: list[ScheduleDecision] = []
     skipped: list[ScheduleDecision] = []
     deferred: list[ScheduleDecision] = []
@@ -206,9 +209,30 @@ def assign_tasks_to_slots(
             if dep_violated:
                 continue
 
+            # Check 4: major-task-per-day cap (flow-state protection)
+            is_major = task.difficulty >= config.major_task_difficulty_threshold
+            day_key = slot.date.isoformat()
+            if is_major:
+                day_major_count = major_tasks_per_day.get(day_key, 0)
+                if day_major_count >= config.max_major_tasks_per_day:
+                    _log(
+                        "Slot skipped: major task cap reached for day",
+                        task_id=task.id,
+                        slot=slot_key,
+                        day=day_key,
+                        major_tasks_on_day=day_major_count,
+                        cap=config.max_major_tasks_per_day,
+                        priority_score=priority_score,
+                        fatigue_score=fatigue_score,
+                        decision_outcome="skipped",
+                    )
+                    continue  # try next slot (different day)
+
             # All checks passed — assign
             consumed_indices.add(idx)
             assigned_slot_times[task.id] = slot_dt
+            if is_major:
+                major_tasks_per_day[day_key] = major_tasks_per_day.get(day_key, 0) + 1
 
             _log(
                 "Task assigned to slot",

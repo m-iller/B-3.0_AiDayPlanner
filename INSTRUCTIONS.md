@@ -43,10 +43,12 @@ Key sections:
 | `[task]`      | Difficulty / urgency / importance ranges              |
 | `[calendar]`  | Active hours (start / end)                            |
 | `[fatigue]`   | Score bounds, increase/recovery weights, penalty      |
-| `[scheduler]` | Priority weights, probability threshold, overload cap |
+| `[scheduler]` | Priority weights, probability threshold, overload cap, major-task cap |
 | `[learning]`  | EMA smoothing factor, default correction coefficient  |
 | `[probability]`| Prior probability, per-factor weights               |
 | `[logging]`   | Log level (`DEBUG` / `INFO` / `WARNING` / `ERROR`)    |
+| `[database]`  | SQLite file path (default: `planner.db`)              |
+| `[week.*]`    | Four time buckets (must_do / projects / learning / rest) with fraction + immutability |
 
 To use a custom config file, pass its path when starting the server (see below).
 
@@ -54,9 +56,11 @@ To use a custom config file, pass its path when starting the server (see below).
 
 ## Starting the Server
 
-### Default (uses `config/default.toml`, in-memory SQLite)
+### Default (uses `config/default.toml`, persistent SQLite)
 
 > **All commands must be run from the project root** (the directory containing `pyproject.toml`), not from inside `ai_day_planner/`.
+
+> Data is stored in `planner.db` (project root) by default and persists across restarts. Override with `DB_PATH` env var or `[database].path` in the config file.
 
 ```bash
 uv run uvicorn ai_day_planner.main:create_app --factory --reload

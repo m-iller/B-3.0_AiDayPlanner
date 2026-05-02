@@ -69,6 +69,10 @@ class SchedulerConfig:
     weight_fatigue: float
     min_completion_probability: float
     daily_overload_threshold: float
+    # Flow-state protection: cap how many "major" tasks are scheduled per day.
+    # A task is "major" when difficulty >= major_task_difficulty_threshold.
+    major_task_difficulty_threshold: int  # e.g. 7 out of 10
+    max_major_tasks_per_day: int          # e.g. 1
 
 
 @dataclass(frozen=True)
@@ -93,6 +97,37 @@ class LoggingConfig:
 
 
 @dataclass(frozen=True)
+class DatabaseConfig:
+    path: str  # file path or ":memory:"
+
+
+@dataclass(frozen=True)
+class WeekBucketConfig:
+    """
+    One of the four weekly time buckets.
+
+    name:        Human-readable label (e.g. "must_do", "projects", "learning", "rest").
+    fraction:    Target fraction of weekly active hours (0.0–1.0). All four must sum to 1.0.
+    is_immutable: When True, the scheduler will not move tasks out of this bucket's slots.
+    """
+    name: str
+    fraction: float
+    is_immutable: bool
+
+
+@dataclass(frozen=True)
+class WeekConfig:
+    """
+    Splits the week into configurable time buckets.
+    Fractions across all buckets must sum to 1.0 (validated at load time).
+    """
+    must_do: WeekBucketConfig
+    projects: WeekBucketConfig
+    learning: WeekBucketConfig
+    rest: WeekBucketConfig
+
+
+@dataclass(frozen=True)
 class AppConfig:
     task: TaskConfig
     calendar: CalendarConfig
@@ -101,6 +136,8 @@ class AppConfig:
     learning: LearningConfig
     probability: ProbabilityConfig
     logging: LoggingConfig
+    database: "DatabaseConfig"
+    week: "WeekConfig"
 
 
 # ---------------------------------------------------------------------------
@@ -293,6 +330,8 @@ def _parse_scheduler_config(raw: dict[str, Any]) -> SchedulerConfig:
     weight_fatigue = _require_float(sec, data, "weight_fatigue")
     min_completion_probability = _require_float(sec, data, "min_completion_probability")
     daily_overload_threshold = _require_float(sec, data, "daily_overload_threshold")
+    major_task_difficulty_threshold = _require_int(sec, data, "major_task_difficulty_threshold")
+    max_major_tasks_per_day = _require_int(sec, data, "max_major_tasks_per_day")
 
     for name, val in [
         ("weight_difficulty", weight_difficulty),
@@ -305,6 +344,15 @@ def _parse_scheduler_config(raw: dict[str, Any]) -> SchedulerConfig:
     _validate_probability(sec, "min_completion_probability", min_completion_probability)
     _validate_probability(sec, "daily_overload_threshold", daily_overload_threshold)
 
+    if major_task_difficulty_threshold < 1:
+        raise ConfigurationError(
+            f"[{sec}] major_task_difficulty_threshold must be >= 1, got {major_task_difficulty_threshold}"
+        )
+    if max_major_tasks_per_day < 1:
+        raise ConfigurationError(
+            f"[{sec}] max_major_tasks_per_day must be >= 1, got {max_major_tasks_per_day}"
+        )
+
     return SchedulerConfig(
         weight_difficulty=weight_difficulty,
         weight_urgency=weight_urgency,
@@ -312,6 +360,8 @@ def _parse_scheduler_config(raw: dict[str, Any]) -> SchedulerConfig:
         weight_fatigue=weight_fatigue,
         min_completion_probability=min_completion_probability,
         daily_overload_threshold=daily_overload_threshold,
+        major_task_difficulty_threshold=major_task_difficulty_threshold,
+        max_major_tasks_per_day=max_major_tasks_per_day,
     )
 
 
@@ -379,6 +429,58 @@ def _parse_logging_config(raw: dict[str, Any]) -> LoggingConfig:
     return LoggingConfig(level=level)
 
 
+def _parse_database_config(raw: dict[str, Any]) -> "DatabaseConfig":
+    sec = "database"
+    # Section is optional — default to a local file
+    data = raw.get(sec, {})
+    path = data.get("path", "planner.db")
+    if not isinstance(path, str) or not path:
+        raise ConfigurationError(f"[{sec}].path must be a non-empty string, got {path!r}")
+    return DatabaseConfig(path=path)
+
+
+def _parse_week_bucket(sec: str, data: dict[str, Any], bucket: str) -> "WeekBucketConfig":
+    sub = data.get(bucket)
+    if not isinstance(sub, dict):
+        raise ConfigurationError(
+            f"[{sec}.{bucket}] must be a table with 'fraction' (float) and 'is_immutable' (bool)"
+        )
+    fraction = _require_float(f"{sec}.{bucket}", sub, "fraction")
+    _validate_probability(f"{sec}.{bucket}", "fraction", fraction)
+    is_immutable_raw = sub.get("is_immutable")
+    if not isinstance(is_immutable_raw, bool):
+        raise ConfigurationError(
+            f"[{sec}.{bucket}].is_immutable must be a boolean, got {is_immutable_raw!r}"
+        )
+    return WeekBucketConfig(name=bucket, fraction=fraction, is_immutable=is_immutable_raw)
+
+
+def _parse_week_config(raw: dict[str, Any]) -> "WeekConfig":
+    sec = "week"
+    data = raw.get(sec, {})
+    if not data:
+        # Default: equal 25% split, all mutable
+        return WeekConfig(
+            must_do=WeekBucketConfig(name="must_do", fraction=0.25, is_immutable=False),
+            projects=WeekBucketConfig(name="projects", fraction=0.25, is_immutable=False),
+            learning=WeekBucketConfig(name="learning", fraction=0.25, is_immutable=False),
+            rest=WeekBucketConfig(name="rest", fraction=0.25, is_immutable=True),
+        )
+
+    must_do = _parse_week_bucket(sec, data, "must_do")
+    projects = _parse_week_bucket(sec, data, "projects")
+    learning = _parse_week_bucket(sec, data, "learning")
+    rest = _parse_week_bucket(sec, data, "rest")
+
+    total = must_do.fraction + projects.fraction + learning.fraction + rest.fraction
+    if abs(total - 1.0) > 1e-6:
+        raise ConfigurationError(
+            f"[{sec}] bucket fractions must sum to 1.0, got {total:.6f}"
+        )
+
+    return WeekConfig(must_do=must_do, projects=projects, learning=learning, rest=rest)
+
+
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
@@ -416,4 +518,6 @@ def load_config(path: Path) -> AppConfig:
         learning=_parse_learning_config(raw),
         probability=_parse_probability_config(raw),
         logging=_parse_logging_config(raw),
+        database=_parse_database_config(raw),
+        week=_parse_week_config(raw),
     )

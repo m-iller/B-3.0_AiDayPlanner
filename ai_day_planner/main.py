@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import dataclasses
 import logging
+import os
 import traceback
 from pathlib import Path
 
@@ -209,8 +210,11 @@ def create_app(config_path: Path | str = "config/default.toml") -> FastAPI:
     configure_logging(config.logging.level)
     logger = get_logger("ai_day_planner.main", level=config.logging.level)
 
-    db_conn = get_connection(":memory:")  # override via env/config for production
+    # DB_PATH env var overrides config file value — useful for containers/CI
+    db_path = os.environ.get("DB_PATH", config.database.path)
+    db_conn = get_connection(db_path)
     run_migrations(db_conn)
+    logger.info("Database connected", extra={"db_path": db_path})
 
     bus = EventBus(logger=get_logger("ai_day_planner.event_bus", level=config.logging.level))
 
